@@ -1,0 +1,21 @@
+dimension,rule_in_plain_words,column,how_you_measured_it,failing_rows,total_rows,score_pct,severity_high_medium_low,who_should_fix_owner_steward_custodian,action
+Completeness,email is missing,email,Count of email values that are null or blank,48,1241,96.132,High, owner
+Completeness,phone is missing,phone,Count of phone values that are null or blank,30,1241,97.582,Medium, custodian
+Uniqueness,customer_id is duplicated,customer_id,Count of rows participating in duplicated customer_id values (keep=False),16,1241,98.711,High, custodian
+Uniqueness,normalized email is duplicated,email,Strip whitespace and lower-case email; count rows participating in duplicate values,168,1241,86.463,High, owner
+Validity,email has a valid format,email,"Regex: ^[^@\s]+@[^@\s]+\.[a-zA-Z]{2,}$",67,1241,94.601,High, custodian
+Validity,loyalty_tier uses an allowed value,loyalty_tier,Count values outside bronze / silver / gold / platinum,13,1241,98.953,Medium, custodian
+Validity,French postal codes have five digits,postal_code,Count postal codes that do not match ^[0-9]{5}$,48,1241,96.132,Medium, custodian
+Consistency,country is written consistently,country,Count distinct raw country spellings found in the data,17,1241,98.63,Medium, custodian
+Consistency,signup_date uses the ISO format,signup_date,Count signup_date values that do not match YYYY-MM-DD,303,1241,75.584,Medium, custodian
+Accuracy,birth_date is in the future,birth_date,Parsed ISO dates later than 2026-11-25,5,1241,99.597,High, custodian
+Accuracy,birth_date is implausibly old,birth_date,Parsed ISO dates before 1906-01-01,3,1241,99.758,High, owner
+Timeliness,signup_date is populated,signup_date,Count of signup_date values that are null or blank,0,1241,100.0,Medium, custodian
+Timeliness,signup_date is recent,signup_date,Count of parsed signup_date values before 2021-11-25 (five-year freshness threshold),166,1241,86.624,Medium, custodian
+Completeness,Every order has an order_date,order_date,Counted order rows with no value at all in the order_date column,11,5207,99.79,high,Custodian,"Stop the load for these rows (date drives downstream reporting), quarantine them and alert the Custodian on call"
+Uniqueness,order_id is unique (no duplicate orders),order_id,Counted order rows whose order_id appears more than once,14,5207,99.73,critical,Custodian,Stop the load and keep yesterday's data; alert the Custodian on call and the Owner
+Validity,Every order belongs to a real customer (foreign key),customer_id,Counted orders whose customer_id does not exist in the customers file (orphan orders),14,5207,99.73,high,Custodian,Load but quarantine the orphan rows; tell the Steward the next morning
+Accuracy,Order amount is strictly positive,total_amount_eur,Counted orders whose total_amount_eur is zero or negative,6,5207,99.88,high,Owner,"Stop the load for these rows (money impact), quarantine them and alert the Owner"
+Validity,Order status is one of the 5 lifecycle values,status,"Counted orders whose status is not exactly pending, shipped, delivered, cancelled or returned (catches SHIPPED, Delivered, a trailing-space ""delivered "", and the misspelling ""canceled"")",9,5207,99.83,low,Custodian,"Load + fix in transform (normalise case/spelling), log it in the weekly report"
+Accuracy,No order is dated in the future,order_date,"Counted orders whose order_date, once parsed, falls after today's date",5,5207,99.9,medium,Owner,Load but quarantine these rows; Owner checks the source system clock/export job
+Timeliness,Orders are loaded within 24h of being placed,order_date,"Compared today's date to the most recent plausible (non-future) order_date in the file: the gap is about 13 days (last real order 2026-11-12 vs. today 2026-11-25), so the daily-load SLA of under 24h is breached",1,1,0.0,high,Custodian,Stop relying on this feed as real-time; alert the Custodian on call to check the daily load job
